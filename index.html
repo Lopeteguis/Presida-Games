@@ -1,0 +1,1574 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Presidente Supremacia - Simulador Político</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        /* Custom scrollbar for mobile sleekness */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .stat-card {
+            transition: all 0.2s ease;
+        }
+        .stat-card:active {
+            transform: scale(0.98);
+        }
+
+        @keyframes danger-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .pulse-danger {
+            animation: danger-pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-amber-500 selection:text-slate-900">
+
+    <!-- TOP HEADER / NATION SUMMARY -->
+    <header class="sticky top-0 z-30 glass-panel border-b border-slate-800 px-4 py-2.5 shadow-lg">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-amber-500 to-amber-700 flex items-center justify-center font-bold text-slate-950 text-xl shadow-md border border-amber-300/30">
+                    <i class="fa-solid font-bold fa-flag-usa" id="flagIcon"></i>
+                </div>
+                <div>
+                    <h1 class="text-xs text-slate-400 font-semibold tracking-wider uppercase" id="presidentTitle">Presidente da República</h1>
+                    <h2 class="text-sm font-bold text-slate-100 flex items-center gap-1.5" id="countryNameDisplay">
+                        República da Pátria
+                        <span id="partyBadge" class="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-bold">PT (Esquerda)</span>
+                    </h2>
+                </div>
+            </div>
+
+            <!-- Turn & Date Info -->
+            <div class="flex items-center space-x-3">
+                <div class="text-right">
+                    <div class="text-[11px] text-slate-400 font-medium" id="dateDisplay">Mês 1 - Ano 1</div>
+                    <div class="text-xs font-bold text-amber-400 flex items-center justify-end gap-1">
+                        <i class="fa-solid fa-coins text-[10px]"></i>
+                        <span id="treasuryDisplay">$ 120.0 Bi</span>
+                    </div>
+                </div>
+                <button id="nextTurnBtn" onclick="nextTurn()" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-slate-950 font-bold px-3 py-2 rounded-lg text-xs shadow-md shadow-amber-500/20 flex items-center gap-1.5 transition">
+                    <span>Avançar</span>
+                    <i class="fa-solid fa-forward text-[10px]"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- KEY INDICATORS BAR -->
+    <section class="bg-slate-900/80 border-b border-slate-800/80 py-2 px-3 overflow-x-auto whitespace-nowrap scrollbar-none">
+        <div class="max-w-4xl mx-auto flex space-x-4 text-xs justify-between min-w-[700px]">
+            <!-- Approval -->
+            <div class="flex items-center gap-1.5" title="Aprovação Popular Geral">
+                <i class="fa-solid fa-users text-sky-400"></i>
+                <span class="text-slate-400">Aprovação:</span>
+                <span id="approvalVal" class="font-bold text-slate-200">52%</span>
+            </div>
+            <!-- Inflation -->
+            <div class="flex items-center gap-1.5" title="Inflação Anual">
+                <i class="fa-solid fa-arrow-trend-up text-rose-400"></i>
+                <span class="text-slate-400">Inflação:</span>
+                <span id="inflationVal" class="font-bold text-rose-400">4.5%</span>
+            </div>
+            <!-- Exchange Rate -->
+            <div class="flex items-center gap-1.5" title="Câmbio / Volatilidade">
+                <i class="fa-solid fa-dollar-sign text-emerald-400"></i>
+                <span class="text-slate-400">Dólar:</span>
+                <span id="exchangeRateVal" class="font-bold text-emerald-400">R$ 5.10</span>
+            </div>
+            <!-- GDP Growth -->
+            <div class="flex items-center gap-1.5" title="Crescimento do PIB">
+                <i class="fa-solid fa-chart-line text-emerald-400"></i>
+                <span class="text-slate-400">PIB:</span>
+                <span id="gdpVal" class="font-bold text-emerald-400">+2.4%</span>
+            </div>
+            <!-- IBOVESPA / Stock Exchange -->
+            <div class="flex items-center gap-1.5" title="Bolsa de Valores (IBOV)">
+                <i class="fa-solid fa-arrow-trend-up text-purple-400"></i>
+                <span class="text-slate-400">IBOV:</span>
+                <span id="ibovVal" class="font-bold text-purple-300">125.4k</span>
+            </div>
+            <!-- Bubble Risk -->
+            <div class="flex items-center gap-1.5" title="Risco de Bolha Financeira">
+                <i class="fa-solid fa-burst text-amber-400"></i>
+                <span class="text-slate-400">Risco Bolha:</span>
+                <span id="bubbleRiskVal" class="font-bold text-amber-400">18%</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN INTERFACE BODY -->
+    <main class="flex-1 max-w-4xl w-full mx-auto p-3 space-y-3 mb-16">
+
+        <!-- ALERT / CRISIS BANNER (HIDDEN BY DEFAULT) -->
+        <div id="crisisBanner" class="hidden glass-panel bg-rose-950/60 border-rose-500/50 p-3.5 rounded-xl flex items-center justify-between border">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-base pulse-danger">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold text-rose-300 uppercase tracking-wider">Crise Prioritária em Andamento</h3>
+                    <p id="crisisTitleDisplay" class="text-sm font-bold text-slate-100">Greve Geral dos Caminhoneiros</p>
+                </div>
+            </div>
+            <button onclick="switchTab('tab-events')" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition active:scale-95">
+                Resolver
+            </button>
+        </div>
+
+        <!-- DYNAMIC TAB PANELS -->
+
+        <!-- TAB 1: VISÃO GERAL & PAINEL NACIONAL -->
+        <div id="tab-overview" class="tab-content space-y-3">
+            <!-- Party Switcher Quick Bar -->
+            <div class="glass-panel p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold text-slate-200">Ideologia e Party Ideology</span>
+                    <p class="text-[10px] text-slate-400">Altera a ideologia do seu governo, mudando a base no Congresso e prioridades de classe.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="setParty('PT')" id="btnPartyPT" class="px-2.5 py-1 text-xs font-bold rounded-lg border transition bg-red-600/30 border-red-500 text-red-300">
+                        PT (Esquerda)
+                    </button>
+                    <button onclick="setParty('PL')" id="btnPartyPL" class="px-2.5 py-1 text-xs font-bold rounded-lg border transition bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200">
+                        PL (Direita)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Status Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                <!-- Saúde -->
+                <div class="glass-panel p-3 rounded-xl border border-slate-800">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-slate-400 font-medium">Saúde Pública</span>
+                        <i class="fa-solid fa-heart-pulse text-rose-400 text-xs"></i>
+                    </div>
+                    <div class="text-lg font-extrabold text-slate-100" id="healthScore">68/100</div>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="healthBar" class="bg-rose-500 h-full rounded-full" style="width: 68%"></div>
+                    </div>
+                </div>
+
+                <!-- Educação -->
+                <div class="glass-panel p-3 rounded-xl border border-slate-800">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-slate-400 font-medium">Educação</span>
+                        <i class="fa-solid fa-graduation-cap text-sky-400 text-xs"></i>
+                    </div>
+                    <div class="text-lg font-extrabold text-slate-100" id="educationScore">62/100</div>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="educationBar" class="bg-sky-500 h-full rounded-full" style="width: 62%"></div>
+                    </div>
+                </div>
+
+                <!-- Segurança -->
+                <div class="glass-panel p-3 rounded-xl border border-slate-800">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-slate-400 font-medium">Segurança</span>
+                        <i class="fa-solid fa-handcuffs text-amber-400 text-xs"></i>
+                    </div>
+                    <div class="text-lg font-extrabold text-slate-100" id="securityScore">55/100</div>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="securityBar" class="bg-amber-500 h-full rounded-full" style="width: 55%"></div>
+                    </div>
+                </div>
+
+                <!-- Infraestrutura -->
+                <div class="glass-panel p-3 rounded-xl border border-slate-800">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-slate-400 font-medium">Infraestrutura</span>
+                        <i class="fa-solid fa-building-columns text-emerald-400 text-xs"></i>
+                    </div>
+                    <div class="text-lg font-extrabold text-slate-100" id="infraScore">50/100</div>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="infraBar" class="bg-emerald-500 h-full rounded-full" style="width: 50%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Presidential Live Feed / Cabinet Reports -->
+            <div class="glass-panel p-4 rounded-xl space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <h3 class="text-xs font-bold uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-newspaper"></i> Informe Diário da Presidência
+                    </h3>
+                    <span class="text-[10px] text-slate-500" id="feedTimestamp">Atualizado agora</span>
+                </div>
+                <div id="presidentialFeed" class="space-y-2 text-xs text-slate-300 max-h-48 overflow-y-auto pr-1">
+                    <!-- Feed items inserted by JS -->
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="glass-panel p-4 rounded-xl border border-slate-800">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-xs font-bold uppercase text-slate-300 tracking-wider">Histórico Econômico & Aprovação</h3>
+                    <span class="text-[10px] text-slate-400">Últimos 12 Meses</span>
+                </div>
+                <div class="h-44 w-full">
+                    <canvas id="overviewChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB NEW: SOCIEDADE, CLASSES & ÍNDICES -->
+        <div id="tab-society" class="tab-content space-y-3 hidden">
+            <!-- Classes Approval Breakdown -->
+            <div class="glass-panel p-4 rounded-xl space-y-3">
+                <h3 class="text-xs font-bold uppercase text-amber-400 tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-users-viewfinder"></i> Aprovação por Classe Social & Setores
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Classe Baixa -->
+                    <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-slate-200">Classe Baixa / Trabalhadores</span>
+                            <span id="approvalLowVal" class="text-xs font-extrabold text-emerald-400">62%</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-2">Impactados por programas sociais, salário mínimo, inflação de alimentos e saúde pública.</p>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div id="approvalLowBar" class="bg-emerald-500 h-full" style="width: 62%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Classe Média -->
+                    <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-slate-200">Classe Média</span>
+                            <span id="approvalMidVal" class="text-xs font-extrabold text-sky-400">50%</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-2">Sensíveis ao poder de compra, taxa de juros, segurança pública e imposto de renda.</p>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div id="approvalMidBar" class="bg-sky-500 h-full" style="width: 50%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Classe Alta / Empresários -->
+                    <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-slate-200">Empresários & Elites</span>
+                            <span id="approvalHighVal" class="text-xs font-extrabold text-purple-400">42%</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-2">Apoiam desregulamentação, impostos baixos, segurança jurídica e controle de gastos.</p>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div id="approvalHighBar" class="bg-purple-500 h-full" style="width: 42%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Militares -->
+                    <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-slate-200">Forças Armadas & Militares</span>
+                            <span id="approvalMilitaryVal" class="text-xs font-extrabold text-indigo-400">60%</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-2">Exigem orçamento militar, estabilidade nacional e liderança forte no Executivo.</p>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div id="approvalMilitaryBar" class="bg-indigo-500 h-full" style="width: 60%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Socioeconomic Metrics -->
+            <div class="glass-panel p-4 rounded-xl space-y-3">
+                <h3 class="text-xs font-bold uppercase text-amber-400 tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie"></i> Indicadores Socioeconômicos
+                </h3>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                    <div class="bg-slate-900/80 p-3 rounded-lg text-center">
+                        <div class="text-[10px] text-slate-400 uppercase">Índice Gini (Desigualdade)</div>
+                        <div id="giniVal" class="text-base font-bold text-amber-400 mt-1">0.485</div>
+                        <div class="text-[9px] text-slate-500 mt-0.5">Quanto menor, mais igual</div>
+                    </div>
+
+                    <div class="bg-slate-900/80 p-3 rounded-lg text-center">
+                        <div class="text-[10px] text-slate-400 uppercase">IDH Nacional</div>
+                        <div id="hdiVal" class="text-base font-bold text-sky-400 mt-1">0.760</div>
+                        <div class="text-[9px] text-slate-500 mt-0.5">Índice Desenvolvimento</div>
+                    </div>
+
+                    <div class="bg-slate-900/80 p-3 rounded-lg text-center">
+                        <div class="text-[10px] text-slate-400 uppercase">Renda Per Capita</div>
+                        <div id="perCapitaVal" class="text-base font-bold text-emerald-400 mt-1">$ 8,920</div>
+                        <div class="text-[9px] text-slate-500 mt-0.5">Média anual / hab</div>
+                    </div>
+
+                    <div class="bg-slate-900/80 p-3 rounded-lg text-center">
+                        <div class="text-[10px] text-slate-400 uppercase">Reservas Internacionais</div>
+                        <div id="fxReservesVal" class="text-base font-bold text-purple-400 mt-1">$ 340.5 Bi</div>
+                        <div class="text-[9px] text-slate-500 mt-0.5">Colchão cambial</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: ECONOMIA & ORÇAMENTO -->
+        <div id="tab-economy" class="tab-content space-y-3 hidden">
+            <!-- Treasury & Balance Banner -->
+            <div class="glass-panel p-4 rounded-xl border border-slate-800 bg-gradient-to-r from-slate-900 to-slate-850">
+                <div class="grid grid-cols-2 gap-4 text-center border-b border-slate-800 pb-3 mb-3">
+                    <div>
+                        <div class="text-[11px] text-slate-400 uppercase font-semibold">Arrecadação Mensal (Receita)</div>
+                        <div id="incomeDisplay" class="text-base font-bold text-emerald-400">+$ 24.5 Bi</div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] text-slate-400 uppercase font-semibold">Gastos Públicos (Despesa)</div>
+                        <div id="expensesDisplay" class="text-base font-bold text-rose-400">-$ 21.0 Bi</div>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center text-xs px-2">
+                    <span class="text-slate-400">Resultado Primário (Superávit / Déficit):</span>
+                    <span id="balanceDisplay" class="font-bold text-emerald-400">+$ 3.5 Bi / mês</span>
+                </div>
+            </div>
+
+            <!-- Financial Markets, Volatility & Crypto Section -->
+            <div class="glass-panel p-4 rounded-xl space-y-3">
+                <h3 class="text-xs font-bold uppercase text-amber-400 tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-coins"></i> Mercado Financeiro, Criptoativos & Câmbio
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Crypto Policy Switcher -->
+                    <div class="bg-slate-900/70 p-3 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-200">Política de Criptomoedas</span>
+                            <span id="cryptoPolicyStatus" class="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-400 border border-sky-500/30">Regulado</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400">Escolha a postura do governo em relação a criptoativos e reservas estatais em Bitcoin.</p>
+                        <div class="grid grid-cols-3 gap-1 pt-1">
+                            <button onclick="setCryptoPolicy('ban')" class="p-1.5 text-[10px] font-bold rounded bg-slate-800 hover:bg-slate-700 text-rose-300">Proibir</button>
+                            <button onclick="setCryptoPolicy('regulate')" class="p-1.5 text-[10px] font-bold rounded bg-sky-600/30 border border-sky-500 text-sky-300">Regular</button>
+                            <button onclick="setCryptoPolicy('adopt')" class="p-1.5 text-[10px] font-bold rounded bg-slate-800 hover:bg-slate-700 text-amber-300">Adotar/Reserva</button>
+                        </div>
+                    </div>
+
+                    <!-- Market Risk & Bubble Indicator -->
+                    <div class="bg-slate-900/70 p-3 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-200">Indicador de Especulação & Bolha</span>
+                            <span id="bubbleStatusText" class="text-[10px] font-bold text-emerald-400">Estável</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden mt-1">
+                            <div id="bubbleRiskBar" class="bg-amber-500 h-full rounded-full" style="width: 18%"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-400">Juros muito baixos por muito tempo expandem o crédito e aumentam o risco de estouro de bolha financeira.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Taxes & Monetary Controls -->
+            <div class="glass-panel p-4 rounded-xl space-y-4">
+                <h3 class="text-xs font-bold uppercase text-amber-400 tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> Política Fiscal e Monetária
+                </h3>
+
+                <!-- Tax Rate Slider -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-300 font-medium">Imposto sobre Renda & Empresas (Alíquota):</span>
+                        <span id="taxRateLabel" class="font-bold text-amber-400">22%</span>
+                    </div>
+                    <input type="range" id="taxRateSlider" min="10" max="50" value="22" oninput="updateEconomySettings()" class="w-full accent-amber-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-slate-500">
+                        <span>Menos Imposto (+PIB, -Caixa, +Aprovação Elites)</span>
+                        <span>Mais Imposto (-Aprovação, +Caixa)</span>
+                    </div>
+                </div>
+
+                <!-- Central Bank Interest Rate -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-300 font-medium">Taxa de Juros Central (Selic/FED):</span>
+                        <span id="interestRateLabel" class="font-bold text-amber-400">8.5%</span>
+                    </div>
+                    <input type="range" id="interestRateSlider" min="2" max="25" step="0.5" value="8.5" oninput="updateEconomySettings()" class="w-full accent-amber-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-slate-500">
+                        <span>Juros Baixos (+Crescimento, +Inflação, +Risco Bolha)</span>
+                        <span>Juros Altos (-Inflação, -Crescimento, +Fortalecimento Moeda)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Allocation -->
+            <div class="glass-panel p-4 rounded-xl space-y-3">
+                <h3 class="text-xs font-bold uppercase text-amber-400 tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie"></i> Distribuição do Orçamento dos Ministérios (Gastos em $ Bi/Mês)
+                </h3>
+
+                <div id="budgetSlidersContainer" class="space-y-3 text-xs">
+                    <!-- Dynamic Budget Sliders populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: LEIS & CONGRESSO -->
+        <div id="tab-congress" class="tab-content space-y-3 hidden">
+            <!-- Congress Seat Breakdown -->
+            <div class="glass-panel p-4 rounded-xl space-y-3">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <h3 class="text-xs font-bold uppercase text-slate-200 tracking-wider">Câmara dos Deputados (513 Cadeiras)</h3>
+                    <span id="congressSupportLabel" class="text-xs font-bold text-emerald-400">Base Governamental: 280</span>
+                </div>
+
+                <!-- Seat Proportion Bar -->
+                <div class="w-full h-4 bg-slate-800 rounded-lg overflow-hidden flex" id="congressBar">
+                    <div class="bg-blue-600 h-full" style="width: 35%" title="Partido Conservador (PL / Direita)"></div>
+                    <div class="bg-red-600 h-full" style="width: 30%" title="Partido Social-Democrata (PT / Esquerda)"></div>
+                    <div class="bg-amber-500 h-full" style="width: 20%" title="Centrão Reformista"></div>
+                    <div class="bg-emerald-600 h-full" style="width: 15%" title="Frente Ecológica/Livre"></div>
+                </div>
+
+                <!-- Senate Seat Breakdown -->
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2 pt-2">
+                    <h3 class="text-xs font-bold uppercase text-slate-200 tracking-wider">Senado Federal (81 Cadeiras)</h3>
+                    <span id="senateSupportLabel" class="text-xs font-bold text-emerald-400">Apoio Estimado: 45</span>
+                </div>
+
+                <div class="w-full h-3 bg-slate-800 rounded-lg overflow-hidden flex" id="senateBar">
+                    <div class="bg-blue-600 h-full" style="width: 38%" title="Partido Conservador (PL / Direita)"></div>
+                    <div class="bg-red-600 h-full" style="width: 28%" title="Partido Social-Democrata (PT / Esquerda)"></div>
+                    <div class="bg-amber-500 h-full" style="width: 22%" title="Centrão Reformista"></div>
+                    <div class="bg-emerald-600 h-full" style="width: 12%" title="Frente Ecológica/Livre"></div>
+                </div>
+
+                <!-- Legend -->
+                <div class="grid grid-cols-2 text-[11px] gap-2 pt-1">
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> PL / Conservadores (Direita)</div>
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> PT / Sociais (Esquerda)</div>
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Centrão Pragmático</div>
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Verdes & Liberais</div>
+                </div>
+            </div>
+
+            <!-- Propose Law Section -->
+            <div class="glass-panel p-4 rounded-xl space-y-3">
+                <h3 class="text-xs font-bold uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-signature"></i> Propostas de Reformas e Leis
+                </h3>
+
+                <div class="space-y-2" id="billsList">
+                    <!-- Bills will be generated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: GABINETE DE MINISTROS -->
+        <div id="tab-cabinet" class="tab-content space-y-3 hidden">
+            <div class="glass-panel p-4 rounded-xl">
+                <h3 class="text-xs font-bold uppercase text-amber-400 tracking-wider mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-user-tie"></i> Seu Gabinete de Governo
+                </h3>
+                <p class="text-[11px] text-slate-400 mb-3">Ministros competentes aumentam a eficiência dos setores, mas ministros desleais podem gerar escândalos ou apoiar um Impeachment.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="cabinetGrid">
+                    <!-- Cabinet Cards generated via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: EVENTOS & CRISES -->
+        <div id="tab-events" class="tab-content space-y-3 hidden">
+            <div class="glass-panel p-4 rounded-xl space-y-4">
+                <div class="border-b border-slate-800 pb-2">
+                    <h3 class="text-xs font-bold uppercase text-amber-400 tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-bolt"></i> Decisões de Estado e Crises
+                    </h3>
+                    <p class="text-[11px] text-slate-400">Sua resposta moldará o futuro político e econômico da nação.</p>
+                </div>
+
+                <div id="activeEventContainer" class="space-y-4">
+                    <!-- Active Event Dynamic Content -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: DIPLOMACIA & MUNDO -->
+        <div id="tab-diplomacy" class="tab-content space-y-3 hidden">
+            <div class="glass-panel p-4 rounded-xl space-y-3">
+                <h3 class="text-xs font-bold uppercase text-amber-400 tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-globe"></i> Relações Internacionais
+                </h3>
+                <p class="text-[11px] text-slate-400">Mantenha boas relações para turbinar suas exportações e evitar sanções ou conflitos armados.</p>
+
+                <div class="space-y-3" id="superpowersList">
+                    <!-- Superpowers dynamic list -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION BAR FOR MOBILE -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-800 bg-slate-950/90 backdrop-blur-md px-2 py-1.5">
+        <div class="max-w-4xl mx-auto flex justify-around items-center">
+            <button onclick="switchTab('tab-overview')" id="nav-tab-overview" class="tab-btn active text-amber-400 flex flex-col items-center p-1.5 rounded-lg transition">
+                <i class="fa-solid fa-chart-pie text-base"></i>
+                <span class="text-[10px] mt-0.5 font-medium">Painel</span>
+            </button>
+            <button onclick="switchTab('tab-society')" id="nav-tab-society" class="tab-btn text-slate-400 hover:text-slate-200 flex flex-col items-center p-1.5 rounded-lg transition">
+                <i class="fa-solid fa-users-viewfinder text-base"></i>
+                <span class="text-[10px] mt-0.5 font-medium">Sociedade</span>
+            </button>
+            <button onclick="switchTab('tab-economy')" id="nav-tab-economy" class="tab-btn text-slate-400 hover:text-slate-200 flex flex-col items-center p-1.5 rounded-lg transition">
+                <i class="fa-solid fa-coins text-base"></i>
+                <span class="text-[10px] mt-0.5 font-medium">Economia</span>
+            </button>
+            <button onclick="switchTab('tab-congress')" id="nav-tab-congress" class="tab-btn text-slate-400 hover:text-slate-200 flex flex-col items-center p-1.5 rounded-lg transition">
+                <i class="fa-solid fa-building-columns text-base"></i>
+                <span class="text-[10px] mt-0.5 font-medium">Congresso</span>
+            </button>
+            <button onclick="switchTab('tab-cabinet')" id="nav-tab-cabinet" class="tab-btn text-slate-400 hover:text-slate-200 flex flex-col items-center p-1.5 rounded-lg transition">
+                <i class="fa-solid fa-user-tie text-base"></i>
+                <span class="text-[10px] mt-0.5 font-medium">Gabinete</span>
+            </button>
+            <button onclick="switchTab('tab-events')" id="nav-tab-events" class="tab-btn text-slate-400 hover:text-slate-200 flex flex-col items-center p-1.5 rounded-lg transition relative">
+                <i class="fa-solid fa-triangle-exclamation text-base"></i>
+                <span class="text-[10px] mt-0.5 font-medium">Crises</span>
+                <span id="eventDot" class="absolute top-1 right-2 w-2 h-2 bg-rose-500 rounded-full animate-ping hidden"></span>
+            </button>
+            <button onclick="switchTab('tab-diplomacy')" id="nav-tab-diplomacy" class="tab-btn text-slate-400 hover:text-slate-200 flex flex-col items-center p-1.5 rounded-lg transition">
+                <i class="fa-solid fa-globe text-base"></i>
+                <span class="text-[10px] mt-0.5 font-medium">Mundo</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- GAME OVER / END GAME MODAL -->
+    <div id="gameOverModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel border-rose-500/40 border p-6 rounded-2xl max-w-md w-full text-center space-y-4">
+            <div class="w-16 h-16 rounded-full bg-rose-500/20 text-rose-500 flex items-center justify-center text-3xl mx-auto">
+                <i class="fa-solid fa-skull-crossbones" id="endGameIcon"></i>
+            </div>
+            <h2 class="text-xl font-black text-slate-100" id="endGameTitle">Fim do Mandato!</h2>
+            <p class="text-xs text-slate-300 leading-relaxed" id="endGameDesc">Você foi removido do cargo por impeachment pelo Congresso devido ao colapso político.</p>
+            
+            <div class="bg-slate-900/80 p-3 rounded-xl text-left space-y-1 text-xs">
+                <div class="flex justify-between text-slate-400"><span>Tempo de Governo:</span> <b class="text-slate-200" id="endGameMonths">18 Meses</b></div>
+                <div class="flex justify-between text-slate-400"><span>Pontuação Final:</span> <b class="text-amber-400" id="endGameScore">1,420 pts</b></div>
+            </div>
+
+            <button onclick="restartGame()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl text-xs transition active:scale-95 shadow-lg shadow-amber-500/20">
+                Tentar Novamente (Novo Mandato)
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT GAME ENGINE -->
+    <script>
+        /* ==========================================================================
+           GAME STATE & ENGINE CORE
+           ========================================================================== */
+
+        let gameState = {
+            month: 1,
+            year: 1,
+            party: 'PT', // 'PT' (Esquerda/Social) or 'PL' (Direita/Capitalista)
+            
+            // Financial & Core Metrics
+            treasury: 120.0, // Bi USD
+            approval: 52, // % overall
+            inflation: 4.5, // %
+            unemployment: 7.2, // %
+            gdpGrowth: 2.4, // %
+            stability: 65, // %
+            militaryApproval: 60, // %
+
+            // Exchange Rate & Financial Volatility
+            exchangeRate: 5.10, // R$ / USD
+            ibovespa: 125400, // Points
+            bubbleRisk: 18, // 0 - 100%
+            cryptoPolicy: 'regulate', // 'ban', 'regulate', 'adopt'
+
+            // Classes Approval Breakdown
+            classApproval: {
+                low: 62,
+                mid: 50,
+                high: 42,
+                military: 60
+            },
+
+            // Social & Demographic Indices
+            social: {
+                gini: 0.485,
+                hdi: 0.760,
+                perCapita: 8920,
+                fxReserves: 340.5
+            },
+
+            // Sector metrics (0 - 100)
+            health: 68,
+            education: 62,
+            security: 55,
+            infrastructure: 50,
+
+            // Economy Controls
+            taxRate: 22, // %
+            interestRate: 8.5, // %
+
+            // Budget Monthly Expenditure (Bi USD)
+            budgets: {
+                health: 4.0,
+                education: 3.5,
+                security: 3.0,
+                infrastructure: 2.5,
+                military: 3.0,
+                welfare: 5.0
+            },
+
+            // Congress (Seats total 513) & Senate (Seats total 81)
+            congress: {
+                right: 180,
+                left: 150,
+                center: 110,
+                green: 73
+            },
+            senate: {
+                right: 31,
+                left: 23,
+                center: 18,
+                green: 9
+            },
+
+            // Cabinet
+            cabinet: [
+                { id: 'econ', role: 'Ministro da Economia', name: 'Dr. Roberto Campos', competence: 82, loyalty: 75, portrait: 'fa-user-tie' },
+                { id: 'health', role: 'Ministro da Saúde', name: 'Dra. Elena Rossi', competence: 70, loyalty: 88, portrait: 'fa-user-doctor' },
+                { id: 'sec', role: 'Ministro da Defesa/Segurança', name: 'Gen. Valente', competence: 90, loyalty: 50, portrait: 'fa-user-shield' },
+                { id: 'edu', role: 'Ministra da Educação', name: 'Profª. Maria Clara', competence: 65, loyalty: 92, portrait: 'fa-graduation-cap' }
+            ],
+
+            // Active Event
+            currentEvent: null,
+
+            // History for Charts
+            history: {
+                labels: ['Mês 1'],
+                approval: [52],
+                gdp: [2.4],
+                inflation: [4.5]
+            },
+
+            // Superpowers relation (-100 to 100)
+            relations: {
+                usa: 20,
+                china: 15,
+                eu: 35
+            }
+        };
+
+        // Available Event Pool
+        const eventPool = [
+            {
+                id: 'bubble_burst',
+                title: 'Estouro de Bolha Especulativa no Mercado',
+                description: 'A expansão desregulada de crédito e ativos especulativos fez a bolha estourar. A Bolsa caiu fortemente e empresas correm risco de falência.',
+                icon: 'fa-burst',
+                severity: 'critical',
+                options: [
+                    {
+                        text: 'Injetar Liquidez no Mercado Financeiro ($10.0 Bi)',
+                        impactDesc: 'Salva os bancos/bolsa, aumenta aprovação da elite, mas custa caro ao Tesouro.',
+                        action: () => {
+                            gameState.treasury -= 10.0;
+                            gameState.ibovespa += 8000;
+                            gameState.classApproval.high += 10;
+                            gameState.bubbleRisk = 10;
+                            addFeedLog('Socorro financeiro estatal estabilizou o mercado após o estouro da bolha.');
+                        }
+                    },
+                    {
+                        text: 'Deixar empresas ineficientes falirem e focar em seguro-desemprego',
+                        impactDesc: 'Protege a classe baixa, mas derruba a Bolsa e a aprovação dos empresários.',
+                        action: () => {
+                            gameState.classApproval.high -= 15;
+                            gameState.classApproval.low += 6;
+                            gameState.ibovespa -= 12000;
+                            gameState.bubbleRisk = 5;
+                            addFeedLog('Governo recusou resgate a bancos, priorizando redes de proteção social.');
+                        }
+                    }
+                ]
+            },
+            {
+                id: 'trucker_strike',
+                title: 'Greve Nacional dos Caminhoneiros',
+                description: 'O aumento do preço do combustível provocou uma paralisação geral das rodovias. O abastecimento de alimentos e suprimentos médicos está crítico.',
+                icon: 'fa-truck-monster',
+                severity: 'high',
+                options: [
+                    {
+                        text: 'Subsidiar o Diesel com dinheiro do Tesouro ($5.0 Bi)',
+                        impactDesc: 'Acalma os caminhoneiros, mas reduz os cofres públicos.',
+                        action: () => {
+                            gameState.treasury -= 5.0;
+                            gameState.approval += 4;
+                            gameState.inflation -= 0.5;
+                            addFeedLog('Governo subsidiou o diesel e encerrou a greve dos caminhoneiros.');
+                        }
+                    },
+                    {
+                        text: 'Usar as Forças Armadas para desobstruir as rodovias',
+                        impactDesc: '+Aprovação Militar, -Aprovação Popular (-8%), Risco de confrontos.',
+                        action: () => {
+                            gameState.militaryApproval += 8;
+                            gameState.classApproval.military += 8;
+                            gameState.approval -= 8;
+                            gameState.stability -= 5;
+                            addFeedLog('Força militar empregada para liberar rodovias bloqueadas.');
+                        }
+                    },
+                    {
+                        text: 'Negociar com lideranças e prometer reforma de frete',
+                        impactDesc: 'Muda pouco o caixa, mas a greve dura mais 1 mês (-PIB).',
+                        action: () => {
+                            gameState.gdpGrowth -= 0.8;
+                            gameState.approval -= 2;
+                            addFeedLog('Negociações longas com caminhoneiros desaceleraram a economia.');
+                        }
+                    }
+                ]
+            },
+            {
+                id: 'corruption_scandal',
+                title: 'Escândalo de Corrupção na Saúde',
+                description: 'A Polícia Federal revelou um esquema de desvio de verbas no Ministério da Saúde envolvendo compras superfaturadas.',
+                icon: 'fa-hand-holding-dollar',
+                severity: 'high',
+                options: [
+                    {
+                        text: 'Demitir o Ministro da Saúde imediatamente',
+                        impactDesc: 'Demonstra firmeza (+Estabilidade), mas perde apoio da base aliada.',
+                        action: () => {
+                            gameState.stability += 5;
+                            gameState.approval += 3;
+                            gameState.cabinet.find(m => m.id === 'health').loyalty -= 20;
+                            addFeedLog('Ministro da Saúde demitido após acusações de corrupção.');
+                        }
+                    },
+                    {
+                        text: 'Abafar as investigações no Congresso',
+                        impactDesc: 'Mantém aliados, mas revolta a população (-10% Aprovação).',
+                        action: () => {
+                            gameState.approval -= 10;
+                            gameState.stability -= 8;
+                            addFeedLog('Governo foi acusado de blindar aliados investigados por corrupção.');
+                        }
+                    }
+                ]
+            },
+            {
+                id: 'tech_investment',
+                title: 'Gigante da Tecnologia busca Hub Regional',
+                description: 'Uma multinacional quer construir uma fábrica de semicondutores no país, mas exige isenção fiscal por 5 anos.',
+                icon: 'fa-microchip',
+                severity: 'medium',
+                options: [
+                    {
+                        text: 'Conceder a isenção fiscal solicitada',
+                        impactDesc: '+1.5% PIB, +Educação/Infra, -Arrecadação imediata.',
+                        action: () => {
+                            gameState.gdpGrowth += 1.5;
+                            gameState.infrastructure += 5;
+                            gameState.unemployment -= 1.2;
+                            gameState.classApproval.high += 8;
+                            addFeedLog('Acordo firmado! Fábrica de tecnologia gerará milhares de empregos.');
+                        }
+                    },
+                    {
+                        text: 'Recusar privilégios fiscais',
+                        impactDesc: 'Protege a arrecadação, mas perde o investimento internacional.',
+                        action: () => {
+                            gameState.relations.usa -= 5;
+                            addFeedLog('Isenções negadas. A multinacional escolheu outro país vizinho.');
+                        }
+                    }
+                ]
+            }
+        ];
+
+        // Available Laws / Reform Bills
+        const availableBills = [
+            {
+                id: 'labor_reform',
+                title: 'Flexibilização Trabalhista',
+                desc: 'Reduz impostos sobre a folha de pagamento para incentivar contratações.',
+                impact: '-Desemprego (-1.5%), +PIB (+0.8%), +Empresários (+8%), -Classe Baixa (-4%).',
+                cost: 0,
+                supportNeeds: { right: 0.8, center: 0.7, left: 0.1, green: 0.4 },
+                passed: false,
+                action: () => {
+                    gameState.unemployment -= 1.5;
+                    gameState.gdpGrowth += 0.8;
+                    gameState.classApproval.high += 8;
+                    gameState.classApproval.low -= 4;
+                }
+            },
+            {
+                id: 'wealth_tax',
+                title: 'Taxação de Grandes Fortunas',
+                desc: 'Cria alíquota sobre super-ricos para financiar renda mínima universal.',
+                impact: '+$ 3.0 Bi/mês Arrecadação, +Classe Baixa (+10%), -Empresários (-12%), +Igualdade (Gini melhor).',
+                cost: 0,
+                supportNeeds: { right: 0.1, center: 0.4, left: 0.9, green: 0.7 },
+                passed: false,
+                action: () => {
+                    gameState.classApproval.low += 10;
+                    gameState.classApproval.high -= 12;
+                    gameState.social.gini = Math.max(0.30, gameState.social.gini - 0.03);
+                    addFeedLog('Taxação de fortunas aprovada. Novos fundos redirecionados ao bem-estar.');
+                }
+            },
+            {
+                id: 'green_energy',
+                title: 'Marco Legal das Energias Renováveis',
+                desc: 'Subsídios para usinas solares e eólicas com financiamento sustentável.',
+                impact: '+Infraestrutura (+6), +Relações com União Europeia, Custos: $4.0 Bi.',
+                cost: 4.0,
+                supportNeeds: { right: 0.3, center: 0.6, left: 0.8, green: 0.95 },
+                passed: false,
+                action: () => {
+                    gameState.treasury -= 4.0;
+                    gameState.infrastructure += 6;
+                    gameState.relations.eu += 15;
+                }
+            },
+            {
+                id: 'pension_reform',
+                title: 'Reforma da Previdência Social',
+                desc: 'Aumenta a idade mínima de aposentadoria para conter déficit público.',
+                impact: 'Economiza $3.0 Bi/mês no orçamento público, -8% Aprovação Popular.',
+                cost: 0,
+                supportNeeds: { right: 0.9, center: 0.8, left: 0.1, green: 0.3 },
+                passed: false,
+                action: () => {
+                    gameState.budgets.welfare -= 3.0;
+                    gameState.approval -= 8;
+                    gameState.stability += 5;
+                }
+            },
+            {
+                id: 'crime_law',
+                title: 'Pacote de Endurecimento Penal',
+                desc: 'Penas mais severas para crime organizado e aumento das verbas policiais.',
+                impact: '+Segurança (+10), +Aprovação Militar (+8%), Custo: $2.5 Bi.',
+                cost: 2.5,
+                supportNeeds: { right: 0.95, center: 0.7, left: 0.2, green: 0.2 },
+                passed: false,
+                action: () => {
+                    gameState.treasury -= 2.5;
+                    gameState.security += 10;
+                    gameState.militaryApproval += 8;
+                    gameState.classApproval.military += 8;
+                }
+            }
+        ];
+
+        /* ==========================================================================
+           PARTY & IDEOLOGY LOGIC
+           ========================================================================== */
+
+        function setParty(partyType) {
+            gameState.party = partyType;
+            if (partyType === 'PT') {
+                document.getElementById('partyBadge').innerText = "PT (Esquerda)";
+                document.getElementById('partyBadge').className = "text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-bold";
+                document.getElementById('btnPartyPT').className = "px-2.5 py-1 text-xs font-bold rounded-lg border transition bg-red-600/30 border-red-500 text-red-300";
+                document.getElementById('btnPartyPL').className = "px-2.5 py-1 text-xs font-bold rounded-lg border transition bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200";
+                addFeedLog('Ideologia de governo ajustada para Esquerda / PT (Foco em Bem-Estar e Inclusão Social).');
+            } else {
+                document.getElementById('partyBadge').innerText = "PL (Direita)";
+                document.getElementById('partyBadge').className = "text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-0.5 rounded font-bold";
+                document.getElementById('btnPartyPL').className = "px-2.5 py-1 text-xs font-bold rounded-lg border transition bg-blue-600/30 border-blue-500 text-blue-300";
+                document.getElementById('btnPartyPT').className = "px-2.5 py-1 text-xs font-bold rounded-lg border transition bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200";
+                addFeedLog('Ideologia de governo ajustada para Direita / PL (Foco em Livre Mercado e Capitalismo).');
+            }
+            updateUI();
+        }
+
+        function setCryptoPolicy(policy) {
+            gameState.cryptoPolicy = policy;
+            const badge = document.getElementById('cryptoPolicyStatus');
+            if (policy === 'ban') {
+                badge.innerText = "Proibido";
+                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30";
+                gameState.bubbleRisk = Math.max(5, gameState.bubbleRisk - 10);
+                addFeedLog('Criptomoedas proibidas no país. Risco de bolha reduzido.');
+            } else if (policy === 'regulate') {
+                badge.innerText = "Regulado";
+                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-400 border border-sky-500/30";
+                addFeedLog('Criptomoedas sob regulação estatal e tributação normal.');
+            } else {
+                badge.innerText = "Adotado / Reserva";
+                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30";
+                gameState.bubbleRisk += 15;
+                addFeedLog('Criptoativos adotados na Reserva do Estado. Alta volatilidade esperada!');
+            }
+            updateUI();
+        }
+
+        /* ==========================================================================
+           CORE GAME MECHANICS & TURN LOGIC
+           ========================================================================== */
+
+        function nextTurn() {
+            gameState.month++;
+            if (gameState.month > 12) {
+                gameState.month = 1;
+                gameState.year++;
+            }
+
+            // Financial Balance & Real-time Revenue Dynamics
+            const taxRevenue = (gameState.taxRate * 1.1) + (gameState.gdpGrowth * 1.5) + 5.0; // Bi
+            const totalBudgetSpent = Object.values(gameState.budgets).reduce((a, b) => a + b, 0);
+            const netBalance = taxRevenue - totalBudgetSpent;
+
+            gameState.treasury += netBalance;
+
+            // Inflation Dynamics based on interest rates & budget spending
+            const targetInflation = 3.0 + (totalBudgetSpent * 0.15) - (gameState.interestRate * 0.3);
+            gameState.inflation += (targetInflation - gameState.inflation) * 0.3;
+            if (gameState.inflation < 1) gameState.inflation = 1.0;
+
+            // GDP Growth Dynamics
+            const growthFactor = (30 - gameState.taxRate) * 0.08 + (12 - gameState.interestRate) * 0.1 + (gameState.infrastructure * 0.03);
+            gameState.gdpGrowth += (growthFactor - gameState.gdpGrowth) * 0.2;
+
+            // Exchange Rate Volatility (USD / BRL)
+            const exchangeDelta = (gameState.inflation * 0.12) - (gameState.interestRate * 0.08) - (gameState.gdpGrowth * 0.05);
+            gameState.exchangeRate = Math.max(3.20, Math.min(10.00, gameState.exchangeRate + exchangeDelta));
+
+            // Stock Exchange (IBOV) Dynamics
+            const ibovDelta = (gameState.gdpGrowth * 1200) - (gameState.taxRate * 400) + (gameState.cryptoPolicy === 'adopt' ? 2500 : 0);
+            gameState.ibovespa = Math.max(50000, Math.round(gameState.ibovespa + ibovDelta));
+
+            // Bubble Risk Mechanics
+            if (gameState.interestRate < 6.0) {
+                gameState.bubbleRisk = Math.min(100, gameState.bubbleRisk + 4);
+            } else {
+                gameState.bubbleRisk = Math.max(5, gameState.bubbleRisk - 2);
+            }
+
+            // Check if bubble bursts automatically
+            if (gameState.bubbleRisk > 75 && Math.random() < 0.35 && !gameState.currentEvent) {
+                const bubbleEv = eventPool.find(e => e.id === 'bubble_burst');
+                if (bubbleEv) {
+                    gameState.currentEvent = bubbleEv;
+                    document.getElementById('eventDot').classList.remove('hidden');
+                    addFeedLog('🚨 **CRISE FINANCEIRA:** Estouro da Bolha no Mercado!');
+                }
+            }
+
+            // Unemployment Dynamic
+            if (gameState.gdpGrowth > 2.5) {
+                gameState.unemployment = Math.max(3.0, gameState.unemployment - 0.2);
+            } else if (gameState.gdpGrowth < 0.5) {
+                gameState.unemployment = Math.min(25.0, gameState.unemployment + 0.3);
+            }
+
+            // Social & Demographics Evolution
+            if (gameState.budgets.welfare > 6.0) {
+                gameState.social.gini = Math.max(0.30, gameState.social.gini - 0.005);
+            } else if (gameState.budgets.welfare < 3.0) {
+                gameState.social.gini = Math.min(0.60, gameState.social.gini + 0.005);
+            }
+
+            gameState.social.hdi = Math.min(0.950, Math.max(0.500, gameState.social.hdi + (gameState.education + gameState.health) * 0.00005));
+            gameState.social.perCapita = Math.round(gameState.social.perCapita * (1 + gameState.gdpGrowth / 100));
+
+            // Classes Approval Mechanics
+            gameState.classApproval.low = Math.min(99, Math.max(5, gameState.classApproval.low + (gameState.budgets.welfare - 4.0) * 1.5 - (gameState.inflation * 1.2)));
+            gameState.classApproval.mid = Math.min(99, Math.max(5, gameState.classApproval.mid + (gameState.gdpGrowth * 1.2) - (gameState.taxRate * 0.5) - (gameState.unemployment * 0.8)));
+            gameState.classApproval.high = Math.min(99, Math.max(5, gameState.classApproval.high + (30 - gameState.taxRate) * 0.8 + (12 - gameState.interestRate) * 0.6));
+            gameState.classApproval.military = Math.min(99, Math.max(5, gameState.militaryApproval));
+
+            // Popular Overall Approval Calculation
+            let idealApproval = (gameState.classApproval.low * 0.4) + (gameState.classApproval.mid * 0.35) + (gameState.classApproval.high * 0.25);
+            gameState.approval += (idealApproval - gameState.approval) * 0.2;
+            gameState.approval = Math.min(99, Math.max(1, Math.round(gameState.approval)));
+
+            // Sector degradation or improvement based on budgets
+            gameState.health = Math.min(100, Math.max(10, gameState.health + (gameState.budgets.health - 4.0) * 1.2));
+            gameState.education = Math.min(100, Math.max(10, gameState.education + (gameState.budgets.education - 3.5) * 1.2));
+            gameState.security = Math.min(100, Math.max(10, gameState.security + (gameState.budgets.security - 3.0) * 1.2));
+            gameState.infrastructure = Math.min(100, Math.max(10, gameState.infrastructure + (gameState.budgets.infrastructure - 2.5) * 1.0));
+
+            // Trigger Random Event if no event active
+            if (!gameState.currentEvent && Math.random() < 0.60) {
+                triggerRandomEvent();
+            }
+
+            // Push History Data for Charts
+            gameState.history.labels.push(`M${gameState.month}-A${gameState.year}`);
+            if (gameState.history.labels.length > 12) {
+                gameState.history.labels.shift();
+                gameState.history.approval.shift();
+                gameState.history.gdp.shift();
+                gameState.history.inflation.shift();
+            }
+            gameState.history.approval.push(Math.round(gameState.approval));
+            gameState.history.gdp.push(parseFloat(gameState.gdpGrowth.toFixed(1)));
+            gameState.history.inflation.push(parseFloat(gameState.inflation.toFixed(1)));
+
+            // Check Game Over / Victory Conditions
+            checkGameStatus();
+
+            // Refresh UI Components
+            updateUI();
+        }
+
+        function triggerRandomEvent() {
+            const unhandledEvents = eventPool.filter(e => e !== gameState.currentEvent && e.id !== 'bubble_burst');
+            const randomEv = unhandledEvents[Math.floor(Math.random() * unhandledEvents.length)];
+            gameState.currentEvent = randomEv;
+            
+            document.getElementById('eventDot').classList.remove('hidden');
+            addFeedLog(`🚨 **CRISE NACIONAL:** ${randomEv.title}`);
+        }
+
+        function resolveEvent(optionIndex) {
+            if (!gameState.currentEvent) return;
+
+            const opt = gameState.currentEvent.options[optionIndex];
+            opt.action();
+
+            gameState.currentEvent = null;
+            document.getElementById('eventDot').classList.add('hidden');
+            
+            updateUI();
+        }
+
+        function checkGameStatus() {
+            // Impeachment Procedure: Triggers when popularity falls below 25%
+            if (gameState.approval < 25) {
+                // Calculate congressional support factor (Center + Party alignment based on stability)
+                let partyBaseBonus = gameState.party === 'PT' ? 0.05 : 0.08;
+                const baseSupportRatio = (gameState.stability / 100) * 0.45 + (gameState.approval / 100) * 0.45 + partyBaseBonus;
+
+                // Chamber of Deputies vote (Requires 2/3 = 342 votes to open impeachment)
+                const chamberVotesForImpeachment = Math.round(513 * (1 - baseSupportRatio));
+                
+                if (chamberVotesForImpeachment >= 342) {
+                    // Senate trial (Requires 2/3 = 54 votes to convict)
+                    const senateVotesForImpeachment = Math.round(81 * (1 - baseSupportRatio));
+                    
+                    if (senateVotesForImpeachment >= 54) {
+                        showGameOver(
+                            'Impeachment Aprovado!', 
+                            `Sua popularidade caiu para ${Math.round(gameState.approval)}% (abaixo do limite de 25%). A Câmara aprovou o impeachment com ${chamberVotesForImpeachment}/513 votos e o Senado cassou definitivamente o mandato por ${senateVotesForImpeachment}/81 votos.`
+                        );
+                        return;
+                    } else {
+                        addFeedLog(`⚠️ **ALERTA DE IMPEACHMENT:** A Câmara aprovou o processo (${chamberVotesForImpeachment} votos), mas o Senado absolveu você (${senateVotesForImpeachment}/54 votos necessários).`);
+                    }
+                } else {
+                    addFeedLog(`⚠️ **ALERTA POLÍTICO:** A oposição tentou abrir Impeachment na Câmara por popularidade crítica (<25%), mas obteve apenas ${chamberVotesForImpeachment} dos 342 votos necessários.`);
+                }
+            }
+
+            // Bankruptcy condition
+            if (gameState.treasury < -50.0) {
+                showGameOver('Falência da Nação!', 'O país entrou em Calote Soberano (Default). FMI e credores internacionais decretaram a falência econômica.');
+                return;
+            }
+
+            // Military Coup
+            if (gameState.militaryApproval < 20 && gameState.stability < 35) {
+                showGameOver('Golpe de Estado Militar!', 'As Forças Armadas marcharam até o Palácio Presidencial e assumiram o controle do governo.');
+                return;
+            }
+        }
+
+        function showGameOver(title, desc) {
+            document.getElementById('endGameTitle').innerText = title;
+            document.getElementById('endGameDesc').innerText = desc;
+            document.getElementById('endGameMonths').innerText = `${(gameState.year - 1) * 12 + gameState.month} Meses`;
+            
+            const finalScore = Math.max(0, Math.round(gameState.approval * 20 + gameState.treasury * 10 + gameState.gdpGrowth * 50));
+            document.getElementById('endGameScore').innerText = `${finalScore} pts`;
+
+            document.getElementById('gameOverModal').classList.remove('hidden');
+        }
+
+        function restartGame() {
+            location.reload();
+        }
+
+        /* ==========================================================================
+           UI RENDERING & USER INTERACTION
+           ========================================================================== */
+
+        let overviewChart = null;
+
+        function initChart() {
+            const ctx = document.getElementById('overviewChart').getContext('2d');
+            overviewChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: gameState.history.labels,
+                    datasets: [
+                        {
+                            label: 'Aprovação (%)',
+                            data: gameState.history.approval,
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'PIB (%)',
+                            data: gameState.history.gdp,
+                            borderColor: '#34d399',
+                            borderWidth: 2,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Inflação (%)',
+                            data: gameState.history.inflation,
+                            borderColor: '#f43f5e',
+                            borderWidth: 2,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { size: 10 } } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            if (!overviewChart) return;
+            overviewChart.data.labels = gameState.history.labels;
+            overviewChart.data.datasets[0].data = gameState.history.approval;
+            overviewChart.data.datasets[1].data = gameState.history.gdp;
+            overviewChart.data.datasets[2].data = gameState.history.inflation;
+            overviewChart.update();
+        }
+
+        function updateUI() {
+            // Header Stats
+            document.getElementById('dateDisplay').innerText = `Mês ${gameState.month} - Ano ${gameState.year}`;
+            document.getElementById('treasuryDisplay').innerText = `$ ${gameState.treasury.toFixed(1)} Bi`;
+            
+            document.getElementById('approvalVal').innerText = `${Math.round(gameState.approval)}%`;
+            document.getElementById('inflationVal').innerText = `${gameState.inflation.toFixed(1)}%`;
+            document.getElementById('exchangeRateVal').innerText = `R$ ${gameState.exchangeRate.toFixed(2)}`;
+            document.getElementById('gdpVal').innerText = `${gameState.gdpGrowth >= 0 ? '+' : ''}${gameState.gdpGrowth.toFixed(1)}%`;
+            document.getElementById('ibovVal').innerText = `${(gameState.ibovespa / 1000).toFixed(1)}k`;
+            document.getElementById('bubbleRiskVal').innerText = `${Math.round(gameState.bubbleRisk)}%`;
+
+            // Society Tab Stats
+            document.getElementById('approvalLowVal').innerText = `${Math.round(gameState.classApproval.low)}%`;
+            document.getElementById('approvalLowBar').style.width = `${gameState.classApproval.low}%`;
+
+            document.getElementById('approvalMidVal').innerText = `${Math.round(gameState.classApproval.mid)}%`;
+            document.getElementById('approvalMidBar').style.width = `${gameState.classApproval.mid}%`;
+
+            document.getElementById('approvalHighVal').innerText = `${Math.round(gameState.classApproval.high)}%`;
+            document.getElementById('approvalHighBar').style.width = `${gameState.classApproval.high}%`;
+
+            document.getElementById('approvalMilitaryVal').innerText = `${Math.round(gameState.classApproval.military)}%`;
+            document.getElementById('approvalMilitaryBar').style.width = `${gameState.classApproval.military}%`;
+
+            document.getElementById('giniVal').innerText = gameState.social.gini.toFixed(3);
+            document.getElementById('hdiVal').innerText = gameState.social.hdi.toFixed(3);
+            document.getElementById('perCapitaVal').innerText = `$ ${gameState.social.perCapita.toLocaleString()}`;
+            document.getElementById('fxReservesVal').innerText = `$ ${gameState.social.fxReserves.toFixed(1)} Bi`;
+
+            // Overview Scores
+            document.getElementById('healthScore').innerText = `${Math.round(gameState.health)}/100`;
+            document.getElementById('healthBar').style.width = `${gameState.health}%`;
+
+            document.getElementById('educationScore').innerText = `${Math.round(gameState.education)}/100`;
+            document.getElementById('educationBar').style.width = `${gameState.education}%`;
+
+            document.getElementById('securityScore').innerText = `${Math.round(gameState.security)}/100`;
+            document.getElementById('securityBar').style.width = `${gameState.security}%`;
+
+            document.getElementById('infraScore').innerText = `${Math.round(gameState.infrastructure)}/100`;
+            document.getElementById('infraBar').style.width = `${gameState.infrastructure}%`;
+
+            // Banner Crises
+            const crisisBanner = document.getElementById('crisisBanner');
+            if (gameState.currentEvent) {
+                crisisBanner.classList.remove('hidden');
+                document.getElementById('crisisTitleDisplay').innerText = gameState.currentEvent.title;
+            } else {
+                crisisBanner.classList.add('hidden');
+            }
+
+            // Render Dynamic Tab Contents
+            renderEconomyTab();
+            renderCongressTab();
+            renderCabinetTab();
+            renderEventTab();
+            renderDiplomacyTab();
+
+            // Update Chart
+            updateChart();
+        }
+
+        function addFeedLog(msg) {
+            const feed = document.getElementById('presidentialFeed');
+            const item = document.createElement('div');
+            item.className = "p-2 rounded bg-slate-900/60 border border-slate-800 text-slate-300";
+            item.innerHTML = `<span class="text-amber-400 font-bold">[M${gameState.month}/A${gameState.year}]</span> ${msg}`;
+            feed.prepend(item);
+        }
+
+        function renderEconomyTab() {
+            document.getElementById('taxRateLabel').innerText = `${gameState.taxRate}%`;
+            document.getElementById('interestRateLabel').innerText = `${gameState.interestRate}%`;
+
+            // Calculate real-time revenues and expenditure
+            const taxRevenue = (gameState.taxRate * 1.1) + (gameState.gdpGrowth * 1.5) + 5.0;
+            const totalSpent = Object.values(gameState.budgets).reduce((a, b) => a + b, 0);
+            const balance = taxRevenue - totalSpent;
+
+            document.getElementById('incomeDisplay').innerText = `+$ ${taxRevenue.toFixed(1)} Bi`;
+            document.getElementById('expensesDisplay').innerText = `-$ ${totalSpent.toFixed(1)} Bi`;
+            
+            const balEl = document.getElementById('balanceDisplay');
+            balEl.innerText = `${balance >= 0 ? '+' : ''}$ ${balance.toFixed(1)} Bi / mês`;
+            balEl.className = balance >= 0 ? "font-bold text-emerald-400" : "font-bold text-rose-400";
+
+            document.getElementById('bubbleRiskBar').style.width = `${gameState.bubbleRisk}%`;
+            const txt = document.getElementById('bubbleStatusText');
+            if (gameState.bubbleRisk > 60) {
+                txt.innerText = "RISCO ELEVADO DE BOLHA";
+                txt.className = "text-[10px] font-bold text-rose-400 animate-pulse";
+            } else if (gameState.bubbleRisk > 35) {
+                txt.innerText = "Moderado";
+                txt.className = "text-[10px] font-bold text-amber-400";
+            } else {
+                txt.innerText = "Estável";
+                txt.className = "text-[10px] font-bold text-emerald-400";
+            }
+
+            // Budget Sliders Rendering
+            const container = document.getElementById('budgetSlidersContainer');
+            container.innerHTML = '';
+
+            const sectors = [
+                { id: 'health', name: 'Saúde Pública', icon: 'fa-heart-pulse' },
+                { id: 'education', name: 'Educação & Ciência', icon: 'fa-graduation-cap' },
+                { id: 'security', name: 'Segurança Interna', icon: 'fa-handcuffs' },
+                { id: 'infrastructure', name: 'Infraestrutura & Obras', icon: 'fa-building-columns' },
+                { id: 'military', name: 'Defesa Nacional & Forças Armadas', icon: 'fa-shield-halved' },
+                { id: 'welfare', name: 'Assistência Social & Renda', icon: 'fa-hand-holding-heart' }
+            ];
+
+            sectors.forEach(sec => {
+                const val = gameState.budgets[sec.id];
+                const div = document.createElement('div');
+                div.className = "space-y-1";
+                div.innerHTML = `
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-300 flex items-center gap-1.5"><i class="fa-solid ${sec.icon} text-amber-400 w-4"></i> ${sec.name}</span>
+                        <span class="font-bold text-slate-200">$ ${val.toFixed(1)} Bi</span>
+                    </div>
+                    <input type="range" min="0.5" max="12.0" step="0.5" value="${val}" oninput="updateBudget('${sec.id}', this.value)" class="w-full accent-amber-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateEconomySettings() {
+            gameState.taxRate = parseFloat(document.getElementById('taxRateSlider').value);
+            gameState.interestRate = parseFloat(document.getElementById('interestRateSlider').value);
+            updateEconomyTabOnly();
+        }
+
+        function updateEconomyTabOnly() {
+            document.getElementById('taxRateLabel').innerText = `${gameState.taxRate}%`;
+            document.getElementById('interestRateLabel').innerText = `${gameState.interestRate}%`;
+            
+            const taxRevenue = (gameState.taxRate * 1.1) + (gameState.gdpGrowth * 1.5) + 5.0;
+            const totalSpent = Object.values(gameState.budgets).reduce((a, b) => a + b, 0);
+            const balance = taxRevenue - totalSpent;
+
+            document.getElementById('incomeDisplay').innerText = `+$ ${taxRevenue.toFixed(1)} Bi`;
+            document.getElementById('expensesDisplay').innerText = `-$ ${totalSpent.toFixed(1)} Bi`;
+            
+            const balEl = document.getElementById('balanceDisplay');
+            balEl.innerText = `${balance >= 0 ? '+' : ''}$ ${balance.toFixed(1)} Bi / mês`;
+            balEl.className = balance >= 0 ? "font-bold text-emerald-400" : "font-bold text-rose-400";
+        }
+
+        function updateBudget(sector, val) {
+            gameState.budgets[sector] = parseFloat(val);
+            updateEconomyTabOnly();
+        }
+
+        function renderCongressTab() {
+            // Update Congress and Senate Support Indicators
+            let partyBonus = gameState.party === 'PT' ? 0.05 : 0.08;
+            const baseSupportRatio = (gameState.stability / 100) * 0.45 + (gameState.approval / 100) * 0.45 + partyBonus;
+            const depSupport = Math.round(513 * baseSupportRatio);
+            const senSupport = Math.round(81 * baseSupportRatio);
+
+            const depLabel = document.getElementById('congressSupportLabel');
+            depLabel.innerText = `Base Governamental: ${depSupport} / 513`;
+            depLabel.className = depSupport >= 257 ? "text-xs font-bold text-emerald-400" : "text-xs font-bold text-rose-400";
+
+            const senLabel = document.getElementById('senateSupportLabel');
+            senLabel.innerText = `Apoio no Senado: ${senSupport} / 81`;
+            senLabel.className = senSupport >= 41 ? "text-xs font-bold text-emerald-400" : "text-xs font-bold text-rose-400";
+
+            const list = document.getElementById('billsList');
+            list.innerHTML = '';
+
+            availableBills.forEach(bill => {
+                const card = document.createElement('div');
+                card.className = "glass-panel p-3 rounded-xl border border-slate-800 space-y-2";
+                
+                // Calculate estimated votes
+                const votesRight = Math.round(gameState.congress.right * bill.supportNeeds.right);
+                const votesCenter = Math.round(gameState.congress.center * bill.supportNeeds.center);
+                const votesLeft = Math.round(gameState.congress.left * bill.supportNeeds.left);
+                const votesGreen = Math.round(gameState.congress.green * bill.supportNeeds.green);
+                const totalVotes = votesRight + votesCenter + votesLeft + votesGreen;
+                const passes = totalVotes >= 257;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-100">${bill.title}</h4>
+                            <p class="text-[11px] text-slate-400 mt-0.5">${bill.desc}</p>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded ${bill.passed ? 'bg-slate-700 text-slate-400' : (passes ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30')}">
+                            ${bill.passed ? 'APROVADA' : (passes ? 'FAVORÁVEL' : 'INSUFICIENTE')}
+                        </span>
+                    </div>
+                    <div class="text-[10px] text-amber-400/90 font-medium">${bill.impact}</div>
+                    <div class="flex justify-between items-center pt-2 border-t border-slate-800">
+                        <span class="text-[10px] text-slate-400">Estimativa: <b class="${passes ? 'text-emerald-400' : 'text-rose-400'}">${totalVotes} / 513 votos</b></span>
+                        <button onclick="voteBill('${bill.id}')" ${bill.passed ? 'disabled' : ''} class="px-3 py-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 font-bold text-xs rounded-lg transition active:scale-95">
+                            ${bill.passed ? 'Promulgada' : 'Votar Reforma'}
+                        </button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function voteBill(billId) {
+            const bill = availableBills.find(b => b.id === billId);
+            if (!bill || bill.passed) return;
+
+            const votesRight = Math.round(gameState.congress.right * bill.supportNeeds.right);
+            const votesCenter = Math.round(gameState.congress.center * bill.supportNeeds.center);
+            const votesLeft = Math.round(gameState.congress.left * bill.supportNeeds.left);
+            const votesGreen = Math.round(gameState.congress.green * bill.supportNeeds.green);
+            const totalVotes = votesRight + votesCenter + votesLeft + votesGreen;
+
+            if (totalVotes >= 257) {
+                bill.passed = true;
+                bill.action();
+                addFeedLog(`📜 **REFORMA APROVADA:** A lei "${bill.title}" passou no Congresso com ${totalVotes} votos!`);
+            } else {
+                addFeedLog(`❌ **REFORMA REJEITADA:** A lei "${bill.title}" foi rejeitada no Congresso (${totalVotes}/257 votos).`);
+                gameState.stability -= 3;
+            }
+
+            updateUI();
+        }
+
+        function renderCabinetTab() {
+            const grid = document.getElementById('cabinetGrid');
+            grid.innerHTML = '';
+
+            gameState.cabinet.forEach(min => {
+                const card = document.createElement('div');
+                card.className = "glass-panel p-3 rounded-xl border border-slate-800 flex items-center space-x-3";
+                card.innerHTML = `
+                    <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-amber-400 text-lg border border-slate-700">
+                        <i class="fa-solid ${min.portrait}"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">${min.role}</div>
+                        <div class="text-xs font-bold text-slate-100 truncate">${min.name}</div>
+                        <div class="flex gap-3 text-[10px] text-slate-400 mt-1">
+                            <span>Competência: <b class="text-slate-200">${min.competence}%</b></span>
+                            <span>Lealdade: <b class="${min.loyalty < 50 ? 'text-rose-400' : 'text-slate-200'}">${min.loyalty}%</b></span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderEventTab() {
+            const container = document.getElementById('activeEventContainer');
+            container.innerHTML = '';
+
+            if (!gameState.currentEvent) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-500 space-y-2">
+                        <i class="fa-solid fa-circle-check text-3xl text-emerald-500/40"></i>
+                        <p class="text-xs">Nenhuma crise imediata requerendo sua atenção no momento.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const ev = gameState.currentEvent;
+            const card = document.createElement('div');
+            card.className = "space-y-4";
+            
+            let optionsHTML = '';
+            ev.options.forEach((opt, idx) => {
+                optionsHTML += `
+                    <button onclick="resolveEvent(${idx})" class="w-full text-left p-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 transition active:scale-[0.99] space-y-1 group">
+                        <div class="text-xs font-bold text-slate-200 group-hover:text-amber-400 flex justify-between">
+                            <span>${opt.text}</span>
+                            <i class="fa-solid fa-chevron-right text-[10px] opacity-50"></i>
+                        </div>
+                        <div class="text-[10px] text-slate-400">${opt.impactDesc}</div>
+                    </button>
+                `;
+            });
+
+            card.innerHTML = `
+                <div class="flex items-center space-x-3 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl">
+                    <div class="w-10 h-10 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid ${ev.icon}"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-100">${ev.title}</h4>
+                        <span class="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Urgência Crítica</span>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">${ev.description}</p>
+                <div class="space-y-2 pt-2">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Escolha uma Ação do Poder Executivo:</span>
+                    ${optionsHTML}
+                </div>
+            `;
+
+            container.appendChild(card);
+        }
+
+        function renderDiplomacyTab() {
+            const container = document.getElementById('superpowersList');
+            container.innerHTML = '';
+
+            const powers = [
+                { id: 'usa', name: 'Estados Unidos', flag: 'fa-flag-usa', rel: gameState.relations.usa },
+                { id: 'china', name: 'China (RPC)', flag: 'fa-building', rel: gameState.relations.china },
+                { id: 'eu', name: 'União Europeia', flag: 'fa-globe-europe', rel: gameState.relations.eu }
+            ];
+
+            powers.forEach(p => {
+                const card = document.createElement('div');
+                card.className = "glass-panel p-3 rounded-xl border border-slate-800 flex items-center justify-between";
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-slate-800 text-amber-400 flex items-center justify-center text-sm">
+                            <i class="fa-solid ${p.flag}"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-100">${p.name}</div>
+                            <div class="text-[10px] text-slate-400">Relação Bilateral: <b class="${p.rel >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${p.rel > 0 ? '+' : ''}${p.rel}</b></div>
+                        </div>
+                    </div>
+                    <button onclick="improveRelation('${p.id}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold rounded-lg border border-slate-700 transition">
+                        Visita Diplomática ($1 Bi)
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function improveRelation(powerId) {
+            if (gameState.treasury < 1.0) {
+                addFeedLog('⚠️ Tesouro insuficiente para missão diplomática.');
+                return;
+            }
+            gameState.treasury -= 1.0;
+            gameState.relations[powerId] = Math.min(100, gameState.relations[powerId] + 12);
+            addFeedLog(`🤝 Visita diplomática realizada com sucesso. Relações bilaterais melhoradas.`);
+            updateUI();
+        }
+
+        /* ==========================================================================
+           NAVIGATION & TAB SWITCHING
+           ========================================================================== */
+
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            
+            // Unhighlight all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-amber-400');
+                btn.classList.add('text-slate-400');
+            });
+
+            // Show current tab & highlight button
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.classList.add('text-amber-400');
+            }
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            initChart();
+            addFeedLog('Mandato presidencial iniciado. Mantenha o equilíbrio do país!');
+            updateUI();
+        };
+    </script>
+</body>
+</html>
+```
